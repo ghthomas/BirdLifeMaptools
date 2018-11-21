@@ -1,4 +1,4 @@
-presabBL <- function(path, grid_size=1, crs=NULL, pres=1, orig=1, season=c(1,2), clip=TRUE, longlat_extent=c(-180, 180, -60, 90)){
+presabBL <- function(path, species=NULL, grid_size=1, crs=NULL, pres=1, orig=1, season=c(1,2), clip=TRUE, longlat_extent=c(-180, 180, -60, 90)){
   # Libraries
   require(sf)
   require(fasterize)
@@ -6,7 +6,10 @@ presabBL <- function(path, grid_size=1, crs=NULL, pres=1, orig=1, season=c(1,2),
   require(raster)
   require(maptools)
   
-  # Create an empty raster. The default crs string creates a 1 degree equal area grid based on the WGS84 ellipsoid model. Grid cells are approximately 100km2. Other crs strings can be defined by the user.
+  if (is.null(species)){ print("No species list provided, analysing all files in path.")}
+  if (!is.null(species)){ print("Analysing species list.")}
+  
+    # Create an empty raster. The default crs string creates a 1 degree equal area grid based on the WGS84 ellipsoid model. Grid cells are approximately 100km2. Other crs strings can be defined by the user.
   if (is.null(crs)) {crs<-"+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"} 
   null_rast <- raster(crs=crs)
   extent(null_rast) <- longlat_extent
@@ -18,10 +21,13 @@ presabBL <- function(path, grid_size=1, crs=NULL, pres=1, orig=1, season=c(1,2),
   
   # Get list of shapefiles. It is assumed that all shapefiles (and only shapefiles) are in the path
   files <- list.files(paste(path), pattern=".shp")
+  files <- gsub(".shp", "", files, fixed=T)
+  files <- intersect(species, files)
+  
+  if (length(files)!=length(species)) {"Some names in species list do not match names in the file path. Analysis will run but you may need to check your species list."}
   
   # Create empty presence absence matrix
   pres_ab <- matrix(NA, ncol=length(files), nrow=null_rast@ncols*null_rast@nrows)
-  files <- gsub(".shp", "", files, fixed=T)
   colnames(pres_ab) <- files
   
   # Now the important stuff
