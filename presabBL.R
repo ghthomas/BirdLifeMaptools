@@ -1,4 +1,4 @@
-presabBL <- function(path, species=NULL, grid_size=1, crs=NULL, pres=1, orig=1, season=c(1,2), clip=TRUE, longlat_extent=c(-180, 180, -60, 90)){
+presabBL <- function(path, species=NULL, grid_size=1, crs=NULL, pres=1, orig=1, season=c(1,2), clip=FALSE, longlat_extent=c(-180, 180, -90, 90)){
   # Libraries
   require(sf)
   require(fasterize)
@@ -9,20 +9,19 @@ presabBL <- function(path, species=NULL, grid_size=1, crs=NULL, pres=1, orig=1, 
   if (is.null(species)){ print("No species list provided, analysing all files in path.")}
   if (!is.null(species)){ print("Analysing species list.")}
   
-    # Create an empty raster. The default crs string creates a 1 degree equal area grid based on the WGS84 ellipsoid model. Grid cells are approximately 100km2. Other crs strings can be defined by the user.
+  # Create an empty raster. The default crs string creates a 1 degree equal area grid based on the WGS84 ellipsoid model. Grid cells are approximately 100km2. Other crs strings can be defined by the user.
   if (is.null(crs)) {crs<-"+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"} 
   null_rast <- raster(crs=crs)
   extent(null_rast) <- longlat_extent
   res(null_rast) <- 1
   
-  # Optionally rescale the grid. 
-  if (grid_size > 1) {null_rast <- aggregate(null_rast, fact=grid_size)}
-  if (grid_size < 1) {null_rast <- disaggregate(null_rast, fact=1/grid_size)}
+  null_rast <- disaggregate(null_rast, fact=1/0.5)
   
   # Get list of shapefiles. It is assumed that all shapefiles (and only shapefiles) are in the path
   files <- list.files(paste(path), pattern=".shp")
   files <- gsub(".shp", "", files, fixed=T)
-  files <- intersect(species, files)
+  
+  if (!is.null(species)){files <- intersect(species, files)}
   
   if (length(files)!=length(species)) {"Some names in species list do not match names in the file path. Analysis will run but you may need to check your species list."}
   
@@ -55,5 +54,18 @@ presabBL <- function(path, species=NULL, grid_size=1, crs=NULL, pres=1, orig=1, 
     crs(worldrast) <- crs
     pres_ab[is.na(worldrast@data@values)] <- NA
   }
-  return(list(pres_ab, crs, grid_size))
+  
+  if(grid_size %in% c(0.5,1,2,4) == FALSE) {grid_size <- 1; warning("Grid size must be 0.5, 1, 2, or 4. Setting grid_size to 1.")}
+  
+  if (grid_size==0.5) { return(list(pres_ab, crs, grid_size))  }
+  
+  if (grid_size %in% c(1,2,4)) {
+    
+    x<-as.numeric(rep(gl(360/grid_size, grid_size*2), grid_size*2))
+    y <- c()
+    for (i in 1:(180/grid_size)){y <- c(y, x+(360)*(i-1))}
+    pres_ab <- rowsum(pres_ab, as.integer(y), na.rm=TRUE)
+    pres_ab[pres_ab>0] <- 1
+    return(list(pres_ab, crs, grid_size))
+  }
 }

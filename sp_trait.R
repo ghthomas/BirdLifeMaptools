@@ -1,4 +1,4 @@
-sp_trait <- function(presab_dat, trait, cell_function="median", plot_map=TRUE, clip=TRUE, clip_by_richness=0, scale="eq_number", nbins=50){
+sp_trait <- function(presab_dat, trait, cell_function="median", range_weights=NULL, plot_map=TRUE, clip=TRUE, clip_by_richness=0, scale="eq_number", nbins=50){
   # Libraries
   require(sf)
   require(fasterize)

@@ -1,4 +1,4 @@
-sp_rich <- function(presab_dat, plot_map=FALSE, clip=TRUE){
+sp_rich <- function(presab_dat, plot_map=FALSE, clip=TRUE, extent=c(-180, 180, -90, 90)){
   # Libraries
   require(sf)
   require(fasterize)
@@ -7,7 +7,7 @@ sp_rich <- function(presab_dat, plot_map=FALSE, clip=TRUE){
 
   # Create an empty raster
   null_rast <- raster(crs=crs)
-  extent(null_rast) <- c(-180, 180, -60, 90)
+  extent(null_rast) <- extent
   res(null_rast) <- 1
   
   grid_size <- presab_dat[[3]]
@@ -19,8 +19,9 @@ sp_rich <- function(presab_dat, plot_map=FALSE, clip=TRUE){
   null_rast2 <- null_rast
   null_rast2@data@inmemory <- TRUE
   null_rast2@data@values <- rowSums(presab_dat[[1]], na.rm=TRUE)
-  null_rast2@data@min <- min(null_rast2@data@values)
-  null_rast2@data@max <- max(null_rast2@data@values)
+  null_rast2@data@values[null_rast2@data@values==0] <- NA
+  null_rast2@data@min <- min(null_rast2@data@values, na.rm=T)
+  null_rast2@data@max <- max(null_rast2@data@values, na.rm=T)
 
   if(clip){
     data("wrld_simpl", package = 'maptools')
@@ -31,5 +32,8 @@ sp_rich <- function(presab_dat, plot_map=FALSE, clip=TRUE){
     null_rast2@data@values[is.na(worldrast@data@values)] <- NA
   }
   
+  if (plot_map==TRUE) {plot(null_rast2)}
+  
   return(null_rast2)
 }
+
