@@ -1,3 +1,15 @@
+######################################################################
+# Create presence absence matrix using fasterize. Note fasterize counts presence 
+# only if polygon overlaps the cell centroid so can miss some presences.
+# The presabBL function samples at the 0.5 degree scale with the option to aggregate at courser
+# scales. To retain speed it does this on the full presence-absence matrix at the end the run.
+# Finer scales are not possible with this approach because of the memory cost of storing a massive matrix.
+# 
+# TO DO
+# Finer scales should be possible with finer grids applied to each shapefile followed by aggregation to the PA matrix.
+# Keep an eye on updates to fasterize for potential addition of getCover (would simplify these resceling issues)
+######################################################################
+
 presabBL <- function(path, species=NULL, grid_size=1, crs=NULL, pres=1, orig=1, season=c(1,2), clip=FALSE, longlat_extent=c(-180, 180, -90, 90)){
   # Libraries
   require(sf)
@@ -66,6 +78,7 @@ presabBL <- function(path, species=NULL, grid_size=1, crs=NULL, pres=1, orig=1, 
     for (i in 1:(180/grid_size)){y <- c(y, x+(360)*(i-1))}
     pres_ab <- rowsum(pres_ab, as.integer(y), na.rm=TRUE)
     pres_ab[pres_ab>0] <- 1
+    pres_ab[pres_ab==0] <- NA
     return(list(pres_ab, crs, grid_size))
   }
 }

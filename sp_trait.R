@@ -1,4 +1,4 @@
-sp_trait <- function(presab_dat, trait, cell_function="median", range_weights=NULL, plot_map=TRUE, clip=TRUE, clip_by_richness=0, scale="eq_number", nbins=50){
+sp_trait <- function(presab_dat, trait, cell_function="median", range_weights=NULL, plot_map=TRUE, clip=TRUE, clip_by_richness=0){
   # Libraries
   require(sf)
   require(fasterize)
@@ -6,6 +6,8 @@ sp_trait <- function(presab_dat, trait, cell_function="median", range_weights=NU
   require(raster)
   require(dispRity)
   require(ggplot2)
+  
+  if (is.null(rownames(dat))) {stop("Trait matrix must be supplied with rownames.")}
   
   # Create an empty raster
   null_rast <- raster(crs=crs)
@@ -33,7 +35,6 @@ sp_trait <- function(presab_dat, trait, cell_function="median", range_weights=NU
     tmp_val <- NA
     sp_index <- !is.na(presab_dat[[1]][i,])
     tmp_nms <- colnames(presab_dat[[1]])[sp_index]
-    
     idx <- which(rownames(trait) %in% tmp_nms) 
     
     if (length(idx)>0){
@@ -56,8 +57,8 @@ sp_trait <- function(presab_dat, trait, cell_function="median", range_weights=NU
   }
   
   null_rast2@data@values <- tr_val
-  null_rast2@data@min <- min(null_rast2@data@values, na.rm=TRUE)
-  null_rast2@data@max <- max(null_rast2@data@values, na.rm=TRUE)
+  null_rast2@data@min <- min(tr_val, na.rm=TRUE)
+  null_rast2@data@max <- max(tr_val, na.rm=TRUE)
   
   if(clip){
     data("wrld_simpl", package = 'maptools')
@@ -68,21 +69,12 @@ sp_trait <- function(presab_dat, trait, cell_function="median", range_weights=NU
     null_rast2@data@values[is.na(worldrast@data@values)] <- NA
   }
   
-  
-  if(clip){
-    data(temp)
-    crs<-"+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
-    crs(temp) <- crs    
-    temp <- aggregate(temp, fact=6)
-    if (grid_size > 1) {temp <- aggregate(temp, fact=grid_size)}
-    if (grid_size < 1) {temp <- disaggregate(temp, fact=1/grid_size)}
-    null_rast2@data@values[is.na(temp@data@values)] <- NA
     
     if(clip_by_richness>0){
       rich <- sp_rich(presab_dat, plot_map=FALSE)
       null_rast2@data@values[which(rich@data@values<clip_by_richness)] <- NA
     }
-  }
+  
 
   if (plot_map==TRUE) {plot(null_rast2)}			
   return(null_rast2)
