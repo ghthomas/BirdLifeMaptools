@@ -7,7 +7,7 @@ sp_trait <- function(presab_dat, trait, cell_function="median", range_weights=NU
   require(dispRity)
   require(ggplot2)
   
-  if (is.null(rownames(dat))) {stop("Trait matrix must be supplied with rownames.")}
+  if (is.null(rownames(trait))) {stop("Trait matrix must be supplied with rownames.")}
   
   # Create an empty raster
   null_rast <- raster(crs=crs)
